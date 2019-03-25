@@ -232,7 +232,7 @@ open class CustomButton: NSButton {
 	/// Gets or sets the color generation closure for the provided key path.
 	///
 	/// - Parameter keyPath: The key path that specifies the color related property.
-	subscript (colorGenerator keyPath: KeyPath<CustomButton, NSColor>) -> ColorGenerator? {
+	subscript(colorGenerator keyPath: KeyPath<CustomButton, NSColor>) -> ColorGenerator? {
 		get {
 			return colorGenerators[keyPath]
 		}
@@ -321,7 +321,7 @@ open class CustomButton: NSButton {
 }
 
 extension CustomButton: NSViewLayerContentScaleDelegate {
-	private func layer(_ layer: CALayer, shouldInheritContentsScale newScale: CGFloat, from window: NSWindow) -> Bool {
+	public func layer(_ layer: CALayer, shouldInheritContentsScale newScale: CGFloat, from window: NSWindow) -> Bool {
 		return true
 	}
 }

@@ -139,7 +139,7 @@ extension NSWindow {
 
 	static let defaultContentSize = CGSize(width: 480, height: 300)
 
-	/// TODO: Find a way to stack windows, so additional windows are not placed exactly on top of previous ones: https://github.com/sindresorhus/gifski-app/pull/30#discussion_r175337064
+	// TODO: Find a way to stack windows, so additional windows are not placed exactly on top of previous ones: https://github.com/sindresorhus/gifski-app/pull/30#discussion_r175337064
 	static var defaultContentRect: CGRect {
 		return centeredOnScreen(rect: defaultContentSize.cgRect)
 	}
@@ -312,7 +312,7 @@ extension AVAssetImageGenerator {
 		let isFinished: Bool
 	}
 
-	/// TODO: Remove this when using Swift 5 and use `CancellationError` in the cancellation case
+	// TODO: Remove this when using Swift 5 and use `CancellationError` in the cancellation case
 	enum Error: CancellableError {
 		case cancelled
 
@@ -992,11 +992,19 @@ extension URL {
 	var fileSize: Int {
 		return resourceValue(forKey: .fileSizeKey) ?? 0
 	}
+
+	var fileSizeFormatted: String {
+		return ByteCountFormatter.string(fromByteCount: Int64(fileSize), countStyle: .file)
+	}
 }
 
 extension CGSize {
 	static func * (lhs: CGSize, rhs: Double) -> CGSize {
 		return CGSize(width: lhs.width * CGFloat(rhs), height: lhs.height * CGFloat(rhs))
+	}
+
+	static func * (lhs: CGSize, rhs: CGFloat) -> CGSize {
+		return CGSize(width: lhs.width * rhs, height: lhs.height * rhs)
 	}
 
 	init(widthHeight: CGFloat) {
@@ -1005,6 +1013,25 @@ extension CGSize {
 
 	var cgRect: CGRect {
 		return CGRect(origin: .zero, size: self)
+	}
+
+	func aspectFit(to boundingSize: CGSize) -> CGSize {
+		let ratio = min(boundingSize.width / width, boundingSize.height / height)
+		return self * ratio
+	}
+
+	func aspectFit(to widthHeight: CGFloat) -> CGSize {
+		return aspectFit(to: CGSize(width: widthHeight, height: widthHeight))
+	}
+
+	// TODO: This one doesn't really make sense. `aspectFit(:widthHeight)` should do what this does already.
+	func maxSize(size: CGFloat) -> CGSize {
+		var newSize = aspectFit(to: size)
+
+		newSize.width = min(width, newSize.width)
+		newSize.height = min(height, newSize.height)
+
+		return newSize
 	}
 }
 
@@ -1682,5 +1709,43 @@ extension GithubReportableError {
 		}
 
 		return false
+	}
+}
+
+extension NSImage {
+	func resizing(to newSize: CGSize) -> NSImage {
+		return NSImage(size: newSize, flipped: false) {
+			self.draw(in: $0)
+			return true
+		}
+	}
+}
+
+extension NSSharingService {
+	class func share(content: [AnyObject], from button: NSButton, preferredEdge: NSRectEdge = .maxX) {
+		let sharingServicePicker = NSSharingServicePicker(items: content)
+		sharingServicePicker.show(relativeTo: button.bounds, of: button, preferredEdge: preferredEdge)
+	}
+}
+
+extension CALayer {
+	// TODO: Make this one more generic by accepting a `x` parameter too.
+	func animateScaleMove(fromScale: CGFloat, fromY: CGFloat) {
+		let springAnimation = CASpringAnimation(keyPath: #keyPath(CALayer.transform))
+
+		var tr = CATransform3DIdentity
+		tr = CATransform3DTranslate(tr, bounds.size.width / 2, fromY, 0)
+		tr = CATransform3DScale(tr, fromScale, fromScale, 1)
+		tr = CATransform3DTranslate(tr, -bounds.size.width / 2, -bounds.size.height / 2, 0)
+
+		springAnimation.damping = 15
+		springAnimation.mass = 0.9
+		springAnimation.initialVelocity = 1
+		springAnimation.duration = springAnimation.settlingDuration
+
+		springAnimation.fromValue = NSValue(caTransform3D: tr)
+		springAnimation.toValue = NSValue(caTransform3D: CATransform3DIdentity)
+
+		add(springAnimation, forKey: "")
 	}
 }
